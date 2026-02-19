@@ -3,80 +3,87 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Calcar PRO (Gratis)</title>
+  <title>Vinci Diagram</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
-  <main class="app" aria-label="Calcar con cámara">
-    <!-- Cámara -->
-    <video id="camera" class="camera" autoplay playsinline muted></video>
-
-    <!-- Overlay -->
-    <img id="overlay" class="overlay is-hidden" alt="Imagen para calcar" />
-
-    <!-- HUD superior -->
-    <header class="topbar">
-      <div class="brand">
-        <span class="dot"></span>
-        <span>Calcar PRO</span>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot" aria-hidden="true"></span>
+      <div class="brand-text">
+        <div class="title">Vinci Diagram</div>
+        <div class="subtitle">Overlay para calcar — cámara + imagen</div>
       </div>
+    </div>
 
-      <div class="top-actions">
-        <button id="btnToggleLock" class="btn btn-ghost" type="button" title="Bloquear/Desbloquear overlay">
-          🔓
-        </button>
-        <button id="btnReset" class="btn btn-ghost" type="button" title="Reiniciar ajustes">
-          ↺
-        </button>
+    <div class="top-actions">
+      <button id="btnTogglePanel" class="btn btn-ghost" type="button" title="Ocultar/Mostrar panel">
+        ⌄
+      </button>
+      <button id="btnLock" class="btn btn-ghost" type="button" title="Bloquear/Desbloquear overlay">
+        🔓
+      </button>
+      <button id="btnReset" class="btn btn-ghost" type="button" title="Reiniciar">
+        ↺
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- RECUDRO / STAGE -->
+    <section class="stage" aria-label="Área de calco">
+      <video id="camera" class="camera" autoplay playsinline muted></video>
+
+      <img id="overlay" class="overlay hidden" alt="Imagen para calcar" />
+
+      <div class="stage-hint" id="stageHint">
+        Subí una imagen para empezar. Luego: 1 dedo mueve, 2 dedos zoom.
       </div>
-    </header>
+    </section>
 
-    <!-- Panel inferior -->
-    <section class="panel" aria-label="Controles">
-      <div class="row">
+    <!-- PANEL -->
+    <section class="panel" id="panel" aria-label="Panel de controles">
+      <div class="panel-row">
         <label class="file">
           <input id="fileInput" type="file" accept="image/*" />
           <span class="btn btn-primary">Subir imagen</span>
         </label>
 
-        <button id="btnFlipCam" class="btn btn-secondary" type="button" title="Cambiar cámara">
+        <button id="btnFlipCam" class="btn btn-secondary" type="button">
           Cambiar cámara
         </button>
       </div>
 
-      <div class="grid">
-        <div class="control">
-          <div class="control__head">
-            <span>Opacidad</span>
-            <span id="opacityValue" class="value">40%</span>
-          </div>
-          <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.40" />
+      <div class="control">
+        <div class="control-head">
+          <span>Opacidad</span>
+          <span id="opacityValue" class="value">40%</span>
         </div>
-
-        <div class="control">
-          <div class="control__head">
-            <span>Tamaño</span>
-            <span id="scaleValue" class="value">100%</span>
-          </div>
-          <input id="scale" type="range" min="0.25" max="3" step="0.01" value="1" />
-        </div>
-
-        <div class="control">
-          <div class="control__head">
-            <span>Rotación</span>
-            <span id="rotateValue" class="value">0°</span>
-          </div>
-          <input id="rotate" type="range" min="-180" max="180" step="1" value="0" />
-        </div>
+        <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.40" />
       </div>
 
-      <p class="hint">
-        Tip: con 1 dedo movés la imagen. Con 2 dedos hacés zoom. Con 🔓/🔒 bloqueás para que no se mueva.
+      <div class="control">
+        <div class="control-head">
+          <span>Tamaño</span>
+          <span id="scaleValue" class="value">100%</span>
+        </div>
+        <input id="scale" type="range" min="0.3" max="3" step="0.01" value="1" />
+      </div>
+
+      <div class="control">
+        <div class="control-head">
+          <span>Rotación</span>
+          <span id="rotateValue" class="value">0°</span>
+        </div>
+        <input id="rotate" type="range" min="-180" max="180" step="1" value="0" />
+      </div>
+
+      <p class="tip">
+        Consejo: tocá ⌄ para ocultar este panel y ver el recuadro completo.
       </p>
     </section>
 
-    <!-- Mensajes -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </main>
 
