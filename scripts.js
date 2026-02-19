@@ -1,44 +1,36 @@
-/* ==========================================================
-   Calcar PRO - Vanilla JS
-   - Cámara trasera / flip
-   - Subir imagen
-   - Opacidad / escala / rotación
-   - Drag + pinch zoom
-   - Lock overlay
-========================================================== */
-
-const $ = (sel) => document.querySelector(sel);
+const $ = (s) => document.querySelector(s);
 
 const video = $("#camera");
 const overlay = $("#overlay");
+const stageHint = $("#stageHint");
 
 const fileInput = $("#fileInput");
-const opacity = $("#opacity");
-const scale = $("#scale");
-const rotate = $("#rotate");
+const opacityEl = $("#opacity");
+const scaleEl = $("#scale");
+const rotateEl = $("#rotate");
 
 const opacityValue = $("#opacityValue");
 const scaleValue = $("#scaleValue");
 const rotateValue = $("#rotateValue");
 
-const btnReset = $("#btnReset");
-const btnToggleLock = $("#btnToggleLock");
 const btnFlipCam = $("#btnFlipCam");
+const btnReset = $("#btnReset");
+const btnLock = $("#btnLock");
+const btnTogglePanel = $("#btnTogglePanel");
 
+const panel = $("#panel");
 const toast = $("#toast");
 
 let stream = null;
 let usingFront = false;
 
 const state = {
-  x: 0,
-  y: 0,
-  scale: Number(scale.value),
-  rotation: Number(rotate.value),
-  opacity: Number(opacity.value),
+  x: 0, y: 0,
+  scale: Number(scaleEl.value),
+  rotation: Number(rotateEl.value),
+  opacity: Number(opacityEl.value),
   locked: false,
 
-  // gestures
   dragging: false,
   lastX: 0,
   lastY: 0,
@@ -48,11 +40,13 @@ const state = {
   pinchStartScale: 1,
 };
 
+const pointers = new Map();
+
 function showToast(msg){
   toast.textContent = msg;
   toast.classList.add("show");
   clearTimeout(showToast._t);
-  showToast._t = setTimeout(()=> toast.classList.remove("show"), 1600);
+  showToast._t = setTimeout(() => toast.classList.remove("show"), 1200);
 }
 
 async function stopCamera(){
@@ -64,29 +58,20 @@ async function stopCamera(){
 async function startCamera(){
   await stopCamera();
 
-  const constraints = {
-    video: {
-      facingMode: usingFront ? "user" : "environment"
-    },
-    audio: false
-  };
-
   try{
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: usingFront ? "user" : "environment" },
+      audio: false
+    });
     video.srcObject = stream;
-    showToast(usingFront ? "Cámara frontal" : "Cámara trasera");
-  }catch(err){
-    // Fallback: sin facingMode, por si iOS/permiso raro
-    try{
-      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      video.srcObject = stream;
-      showToast("Cámara iniciada (modo genérico)");
-    }catch(e2){
-      alert("No pude acceder a la cámara. Revisá permisos en el navegador.");
-      console.error(e2);
-    }
+  }catch(e){
+    alert("No pude acceder a la cámara. Revisá permisos del navegador.");
+    console.error(e);
   }
 }
+
+function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
 
 function updateHUD(){
   opacityValue.textContent = `${Math.round(state.opacity * 100)}%`;
@@ -94,8 +79,7 @@ function updateHUD(){
   rotateValue.textContent = `${Math.round(state.rotation)}°`;
 }
 
-function applyOverlayTransform(){
-  // translate(-50%,-50%) base + nuestro offset + scale + rotate
+function applyTransform(){
   overlay.style.opacity = String(state.opacity);
   overlay.style.transform =
     `translate(-50%, -50%) translate(${state.x}px, ${state.y}px) rotate(${state.rotation}deg) scale(${state.scale})`;
@@ -104,9 +88,9 @@ function applyOverlayTransform(){
 
 function setLocked(lock){
   state.locked = lock;
-  overlay.classList.toggle("is-locked", lock);
-  btnToggleLock.textContent = lock ? "🔒" : "🔓";
-  showToast(lock ? "Overlay bloqueado" : "Overlay desbloqueado");
+  overlay.classList.toggle("locked", lock);
+  btnLock.textContent = lock ? "🔒" : "🔓";
+  showToast(lock ? "Overlay bloqueado" : "Overlay libre");
 }
 
 function resetAll(){
@@ -116,17 +100,15 @@ function resetAll(){
   state.rotation = 0;
   state.opacity = 0.4;
 
-  opacity.value = state.opacity;
-  scale.value = state.scale;
-  rotate.value = state.rotation;
+  opacityEl.value = state.opacity;
+  scaleEl.value = state.scale;
+  rotateEl.value = state.rotation;
 
-  applyOverlayTransform();
+  applyTransform();
   showToast("Reiniciado");
 }
 
-/* ==========================
-   Imagen
-========================== */
+/* Upload imagen */
 fileInput.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -134,50 +116,46 @@ fileInput.addEventListener("change", (e) => {
   const reader = new FileReader();
   reader.onload = () => {
     overlay.src = reader.result;
-    overlay.classList.remove("is-hidden");
+    overlay.classList.remove("hidden");
+    stageHint.style.display = "none";
     resetAll();
     showToast("Imagen cargada");
   };
   reader.readAsDataURL(file);
 });
 
-/* ==========================
-   Sliders
-========================== */
-opacity.addEventListener("input", () => {
-  state.opacity = Number(opacity.value);
-  applyOverlayTransform();
+/* Sliders */
+opacityEl.addEventListener("input", () => {
+  state.opacity = Number(opacityEl.value);
+  applyTransform();
+});
+scaleEl.addEventListener("input", () => {
+  state.scale = Number(scaleEl.value);
+  applyTransform();
+});
+rotateEl.addEventListener("input", () => {
+  state.rotation = Number(rotateEl.value);
+  applyTransform();
 });
 
-scale.addEventListener("input", () => {
-  state.scale = Number(scale.value);
-  applyOverlayTransform();
-});
-
-rotate.addEventListener("input", () => {
-  state.rotation = Number(rotate.value);
-  applyOverlayTransform();
-});
-
-/* ==========================
-   Botones
-========================== */
-btnReset.addEventListener("click", resetAll);
-
-btnToggleLock.addEventListener("click", () => setLocked(!state.locked));
-
+/* Botones */
 btnFlipCam.addEventListener("click", async () => {
   usingFront = !usingFront;
   await startCamera();
+  showToast(usingFront ? "Cámara frontal" : "Cámara trasera");
 });
 
-/* ==========================
-   Gestos (Pointer Events)
-   - 1 dedo: drag
-   - 2 dedos: pinch zoom
-========================== */
-const pointers = new Map();
+btnReset.addEventListener("click", resetAll);
 
+btnLock.addEventListener("click", () => setLocked(!state.locked));
+
+btnTogglePanel.addEventListener("click", () => {
+  const hidden = panel.classList.toggle("is-hidden");
+  btnTogglePanel.textContent = hidden ? "⌃" : "⌄";
+  showToast(hidden ? "Panel oculto" : "Panel visible");
+});
+
+/* Gestos: drag + pinch */
 overlay.addEventListener("pointerdown", (ev) => {
   if (state.locked) return;
   overlay.setPointerCapture(ev.pointerId);
@@ -190,9 +168,8 @@ overlay.addEventListener("pointerdown", (ev) => {
   } else if (pointers.size === 2){
     state.pinch = true;
     state.dragging = false;
-
     const pts = [...pointers.values()];
-    state.pinchStartDist = distance(pts[0], pts[1]);
+    state.pinchStartDist = dist(pts[0], pts[1]);
     state.pinchStartScale = state.scale;
   }
 });
@@ -208,65 +185,45 @@ overlay.addEventListener("pointermove", (ev) => {
     const dy = ev.clientY - state.lastY;
     state.lastX = ev.clientX;
     state.lastY = ev.clientY;
-
     state.x += dx;
     state.y += dy;
-    applyOverlayTransform();
+    applyTransform();
   }
 
   if (pointers.size === 2 && state.pinch){
     const pts = [...pointers.values()];
-    const d = distance(pts[0], pts[1]);
-
+    const d = dist(pts[0], pts[1]);
     const ratio = d / Math.max(1, state.pinchStartDist);
-    const nextScale = clamp(state.pinchStartScale * ratio, 0.25, 3);
-
-    state.scale = nextScale;
-    scale.value = String(nextScale);
-    applyOverlayTransform();
+    state.scale = clamp(state.pinchStartScale * ratio, 0.3, 3);
+    scaleEl.value = String(state.scale);
+    applyTransform();
   }
 });
 
-overlay.addEventListener("pointerup", (ev) => cleanupPointer(ev));
-overlay.addEventListener("pointercancel", (ev) => cleanupPointer(ev));
-overlay.addEventListener("pointerleave", (ev) => cleanupPointer(ev));
+["pointerup","pointercancel","pointerleave"].forEach(evt=>{
+  overlay.addEventListener(evt, (ev) => {
+    pointers.delete(ev.pointerId);
 
-function cleanupPointer(ev){
-  if (!pointers.has(ev.pointerId)) return;
-  pointers.delete(ev.pointerId);
+    if (pointers.size === 0){
+      state.dragging = false;
+      state.pinch = false;
+    } else if (pointers.size === 1){
+      const only = [...pointers.values()][0];
+      state.dragging = true;
+      state.pinch = false;
+      state.lastX = only.x;
+      state.lastY = only.y;
+    }
+  });
+});
 
-  if (pointers.size === 0){
-    state.dragging = false;
-    state.pinch = false;
-  } else if (pointers.size === 1){
-    // volver a drag con el dedo que queda
-    const only = [...pointers.values()][0];
-    state.dragging = true;
-    state.pinch = false;
-    state.lastX = only.x;
-    state.lastY = only.y;
-  }
-}
-
-function distance(a, b){
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  return Math.hypot(dx, dy);
-}
-
-function clamp(n, min, max){
-  return Math.max(min, Math.min(max, n));
-}
-
-/* ==========================
-   Init
-========================== */
+/* Init */
 (async function init(){
   if (!navigator.mediaDevices?.getUserMedia){
-    alert("Tu navegador no soporta cámara (getUserMedia). Probá con Chrome/Safari actualizado.");
+    alert("Tu navegador no soporta cámara. Probá Safari/Chrome actualizado.");
     return;
   }
   await startCamera();
-  applyOverlayTransform();
+  applyTransform();
   setLocked(false);
 })();
