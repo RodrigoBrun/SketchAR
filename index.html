@@ -1,92 +1,277 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Vinci Diagram</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#080b10">
+  <meta name="description" content="Estudio de calco con cámara, preparación de imágenes y herramientas de precisión.">
+  <title>SketchAR Studio</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="dot" aria-hidden="true"></span>
-      <div class="brand-text">
-        <div class="title">Vinci Diagram</div>
-        <div class="subtitle">Overlay para calcar — cámara + imagen</div>
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="i-image" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 16l4.5-4.5 3 3 2-2L20 19M15.5 9h.01"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M8 14v6"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM12 4v16M4 12h16"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v10H3z"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7 4 12l5 5M5 12h9a5 5 0 0 1 5 5"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 7 5 5-5 5M19 12h-9a5 5 0 0 0-5 5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M16 10V7a4 4 0 0 0-7.5-2"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 4v4.6h4.6"/></symbol>
+    <symbol id="i-flip" viewBox="0 0 24 24"><path d="M8 7h11l-3-3M16 17H5l3 3M19 7l-3 3M5 17l3-3"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></symbol>
+    <symbol id="i-record" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M8.5 14.5A6 6 0 1 1 15.5 14.5C14.5 15.3 14 16 14 18h-4c0-2-.5-2.7-1.5-3.5Z"/></symbol>
+    <symbol id="i-maximize" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></symbol>
+  </svg>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="brand" id="btnHome" type="button" aria-label="Ir a proyectos">
+        <span class="brand-mark"><img class="brand-logo" src="icon.svg" alt=""></span>
+        <span class="brand-copy">
+          <strong>SketchAR</strong>
+          <small id="projectLabel">Proyecto sin título</small>
+        </span>
+      </button>
+
+      <div class="top-status" id="saveStatus" aria-live="polite">
+        <span class="status-dot"></span><span>Guardado</span>
       </div>
-    </div>
 
-    <div class="top-actions">
-      <button id="btnTogglePanel" class="btn btn-ghost" type="button" title="Ocultar/Mostrar panel">
-        ⌄
-      </button>
-      <button id="btnLock" class="btn btn-ghost" type="button" title="Bloquear/Desbloquear overlay">
-        🔓
-      </button>
-      <button id="btnReset" class="btn btn-ghost" type="button" title="Reiniciar">
-        ↺
-      </button>
-    </div>
-  </header>
-
-  <main class="layout">
-    <!-- RECUDRO / STAGE -->
-    <section class="stage" aria-label="Área de calco">
-      <video id="camera" class="camera" autoplay playsinline muted></video>
-
-      <img id="overlay" class="overlay hidden" alt="Imagen para calcar" />
-
-      <div class="stage-hint" id="stageHint">
-        Subí una imagen para empezar. Luego: 1 dedo mueve, 2 dedos zoom.
-      </div>
-    </section>
-
-    <!-- PANEL -->
-    <section class="panel" id="panel" aria-label="Panel de controles">
-      <div class="panel-row">
-        <label class="file">
-          <input id="fileInput" type="file" accept="image/*" />
-          <span class="btn btn-primary">Subir imagen</span>
-        </label>
-
-        <button id="btnFlipCam" class="btn btn-secondary" type="button">
-          Cambiar cámara
+      <div class="top-actions">
+        <button class="icon-btn" id="btnUndo" type="button" aria-label="Deshacer" title="Deshacer">
+          <svg><use href="#i-undo"/></svg>
+        </button>
+        <button class="icon-btn" id="btnRedo" type="button" aria-label="Rehacer" title="Rehacer">
+          <svg><use href="#i-redo"/></svg>
+        </button>
+        <button class="icon-btn lock-btn" id="btnLock" type="button" aria-label="Bloquear referencia" title="Bloquear referencia">
+          <svg><use id="lockIcon" href="#i-unlock"/></svg>
         </button>
       </div>
+    </header>
 
-      <div class="control">
-        <div class="control-head">
-          <span>Opacidad</span>
-          <span id="opacityValue" class="value">40%</span>
+    <main class="workspace">
+      <section class="stage" id="stage" aria-label="Área de calco">
+        <video id="camera" class="camera" autoplay playsinline muted></video>
+        <div class="camera-placeholder" id="cameraPlaceholder">
+          <svg><use href="#i-camera"/></svg>
+          <strong>Cámara no iniciada</strong>
+          <span>Permití el acceso para ver el papel detrás de la referencia.</span>
+          <button class="button button-primary" id="btnStartCamera" type="button">Iniciar cámara</button>
         </div>
-        <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.40" />
-      </div>
 
-      <div class="control">
-        <div class="control-head">
-          <span>Tamaño</span>
-          <span id="scaleValue" class="value">100%</span>
+        <img id="overlay" class="overlay hidden" alt="Referencia para calcar" draggable="false">
+        <div id="guides" class="guides guides-none" aria-hidden="true"></div>
+
+        <div class="empty-state" id="emptyState">
+          <span class="empty-icon"><svg><use href="#i-image"/></svg></span>
+          <h1>Prepará tu referencia</h1>
+          <p>Cargá una foto, convertí sus contornos en líneas y alineala sobre el papel.</p>
+          <label class="button button-primary">
+            <input id="fileInputHero" type="file" accept="image/*">
+            Elegir imagen
+          </label>
         </div>
-        <input id="scale" type="range" min="0.3" max="3" step="0.01" value="1" />
-      </div>
 
-      <div class="control">
-        <div class="control-head">
-          <span>Rotación</span>
-          <span id="rotateValue" class="value">0°</span>
+        <div class="stage-chips">
+          <span class="chip" id="cameraChip"><span class="chip-dot"></span><span>Sin cámara</span></span>
+          <span class="chip hidden" id="recordChip"><span class="record-dot"></span><span id="recordTime">00:00</span></span>
         </div>
-        <input id="rotate" type="range" min="-180" max="180" step="1" value="0" />
+
+        <div class="quick-tools" id="quickTools">
+          <button class="floating-btn" id="btnReset" type="button" title="Restablecer referencia" aria-label="Restablecer referencia">
+            <svg><use href="#i-reset"/></svg>
+          </button>
+          <button class="floating-btn" id="btnFullscreen" type="button" title="Pantalla completa" aria-label="Pantalla completa">
+            <svg><use href="#i-maximize"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <nav class="tool-dock" aria-label="Herramientas principales">
+        <button class="dock-item active" data-panel="image" type="button">
+          <svg><use href="#i-image"/></svg><span>Imagen</span>
+        </button>
+        <button class="dock-item" data-panel="adjust" type="button">
+          <svg><use href="#i-sliders"/></svg><span>Ajustar</span>
+        </button>
+        <button class="dock-item" data-panel="guides" type="button">
+          <svg><use href="#i-grid"/></svg><span>Guías</span>
+        </button>
+        <button class="dock-item" data-panel="camera" type="button">
+          <svg><use href="#i-camera"/></svg><span>Cámara</span>
+        </button>
+        <button class="dock-item" data-panel="projects" type="button">
+          <svg><use href="#i-folder"/></svg><span>Proyecto</span>
+        </button>
+      </nav>
+    </main>
+
+    <aside class="tool-sheet" id="toolSheet" aria-label="Panel de herramientas">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <header class="sheet-head">
+        <div>
+          <small>HERRAMIENTAS</small>
+          <h2 id="sheetTitle">Imagen</h2>
+        </div>
+        <button class="icon-btn" id="btnCloseSheet" type="button" aria-label="Cerrar herramientas">
+          <svg><use href="#i-close"/></svg>
+        </button>
+      </header>
+
+      <div class="sheet-body">
+        <section class="tool-panel active" data-panel-content="image">
+          <label class="upload-card">
+            <input id="fileInput" type="file" accept="image/*">
+            <span class="upload-icon"><svg><use href="#i-image"/></svg></span>
+            <span><strong>Cambiar referencia</strong><small>JPG, PNG, WebP o foto de cámara</small></span>
+          </label>
+
+          <div class="field-group">
+            <label class="field-label" for="filterMode">Estilo de imagen</label>
+            <select id="filterMode" class="select">
+              <option value="original">Original</option>
+              <option value="grayscale">Escala de grises</option>
+              <option value="lineart">Contornos</option>
+              <option value="threshold">Blanco y negro</option>
+            </select>
+          </div>
+
+          <div class="segmented" aria-label="Transformar imagen">
+            <button id="btnFlipX" type="button">Espejo horizontal</button>
+            <button id="btnFlipY" type="button">Espejo vertical</button>
+          </div>
+
+          <p class="panel-note">Consejo: “Contornos” limpia la fotografía para que sea mucho más fácil de calcar.</p>
+        </section>
+
+        <section class="tool-panel" data-panel-content="adjust">
+          <div class="range-control">
+            <div><label for="opacity">Opacidad</label><output id="opacityValue">42%</output></div>
+            <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.42">
+          </div>
+          <div class="range-control">
+            <div><label for="scale">Tamaño</label><output id="scaleValue">100%</output></div>
+            <input id="scale" type="range" min="0.2" max="4" step="0.01" value="1">
+          </div>
+          <div class="range-control">
+            <div><label for="rotate">Rotación</label><output id="rotateValue">0°</output></div>
+            <input id="rotate" type="range" min="-180" max="180" step="1" value="0">
+          </div>
+          <div class="range-control">
+            <div><label for="brightness">Brillo</label><output id="brightnessValue">0</output></div>
+            <input id="brightness" type="range" min="-100" max="100" step="1" value="0">
+          </div>
+          <div class="range-control">
+            <div><label for="contrast">Contraste</label><output id="contrastValue">0</output></div>
+            <input id="contrast" type="range" min="-100" max="100" step="1" value="0">
+          </div>
+          <div class="range-control conditional-threshold">
+            <div><label for="threshold">Detalle de líneas</label><output id="thresholdValue">128</output></div>
+            <input id="threshold" type="range" min="20" max="235" step="1" value="128">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="blendMode">Fusión con cámara</label>
+            <select id="blendMode" class="select">
+              <option value="normal">Normal</option>
+              <option value="multiply">Multiplicar</option>
+              <option value="screen">Aclarar</option>
+              <option value="difference">Diferencia</option>
+            </select>
+          </div>
+          <button class="button button-secondary full" id="btnResetAdjust" type="button">
+            <svg><use href="#i-reset"/></svg> Restablecer ajustes
+          </button>
+        </section>
+
+        <section class="tool-panel" data-panel-content="guides">
+          <div class="option-list" id="guideOptions">
+            <button class="option-row selected" data-guide="none" type="button"><span>Sin guías</span><svg><use href="#i-check"/></svg></button>
+            <button class="option-row" data-guide="grid" type="button"><span>Cuadrícula</span><svg><use href="#i-check"/></svg></button>
+            <button class="option-row" data-guide="thirds" type="button"><span>Regla de tercios</span><svg><use href="#i-check"/></svg></button>
+            <button class="option-row" data-guide="center" type="button"><span>Centro y diagonales</span><svg><use href="#i-check"/></svg></button>
+          </div>
+          <div class="range-control">
+            <div><label for="guideOpacity">Intensidad</label><output id="guideOpacityValue">45%</output></div>
+            <input id="guideOpacity" type="range" min="0.1" max="1" step="0.05" value="0.45">
+          </div>
+          <div class="segmented">
+            <button id="btnNudgeLeft" type="button">← 1 px</button>
+            <button id="btnCenter" type="button">Centrar</button>
+            <button id="btnNudgeRight" type="button">1 px →</button>
+          </div>
+        </section>
+
+        <section class="tool-panel" data-panel-content="camera">
+          <div class="action-grid">
+            <button class="action-card" id="btnFlipCam" type="button"><svg><use href="#i-flip"/></svg><span>Cambiar cámara</span></button>
+            <button class="action-card" id="btnTorch" type="button" disabled><svg><use href="#i-bulb"/></svg><span>Linterna</span></button>
+            <button class="action-card" id="btnCapture" type="button"><svg><use href="#i-camera"/></svg><span>Capturar</span></button>
+            <button class="action-card record-action" id="btnRecord" type="button"><svg><use href="#i-record"/></svg><span>Grabar</span></button>
+          </div>
+          <div class="range-control camera-zoom hidden" id="cameraZoomControl">
+            <div><label for="cameraZoom">Zoom de cámara</label><output id="cameraZoomValue">1×</output></div>
+            <input id="cameraZoom" type="range" min="1" max="1" step="0.1" value="1">
+          </div>
+          <div class="toggle-row">
+            <span><strong>Mantener pantalla activa</strong><small>Evita que se apague mientras dibujás</small></span>
+            <label class="switch"><input id="keepAwake" type="checkbox"><span></span></label>
+          </div>
+          <p class="panel-note" id="cameraCapabilities">Los controles disponibles dependen de la cámara y el navegador.</p>
+        </section>
+
+        <section class="tool-panel" data-panel-content="projects">
+          <div class="field-group">
+            <label class="field-label" for="projectName">Nombre del proyecto</label>
+            <input id="projectName" class="text-input" type="text" maxlength="60" value="Proyecto sin título">
+          </div>
+          <div class="project-actions">
+            <button class="button button-primary" id="btnSaveProject" type="button">Guardar ahora</button>
+            <button class="button button-secondary" id="btnNewProject" type="button">Nuevo</button>
+          </div>
+          <div class="section-title"><span>Mis proyectos</span><small id="projectCount">0</small></div>
+          <div class="project-list" id="projectList">
+            <div class="list-empty">Todavía no hay proyectos guardados.</div>
+          </div>
+          <div class="section-title"><span>Exportar</span></div>
+          <button class="button button-secondary full" id="btnExport" type="button">
+            <svg><use href="#i-download"/></svg> Descargar captura PNG
+          </button>
+        </section>
       </div>
+    </aside>
 
-      <p class="tip">
-        Consejo: tocá ⌄ para ocultar este panel y ver el recuadro completo.
-      </p>
-    </section>
+    <div class="sheet-backdrop" id="sheetBackdrop"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </div>
 
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  </main>
+  <dialog class="welcome-dialog" id="welcomeDialog">
+    <button class="dialog-close" id="btnCloseWelcome" type="button" aria-label="Cerrar"><svg><use href="#i-close"/></svg></button>
+    <span class="welcome-mark"><img class="brand-logo" src="icon.svg" alt=""></span>
+    <p class="eyebrow">SKETCHAR STUDIO</p>
+    <h2>Del teléfono al papel,<br>con precisión.</h2>
+    <p>Prepará una imagen, alineala sobre la cámara y usá gestos para calcarla sin perder proporciones.</p>
+    <ol class="welcome-steps">
+      <li><span>1</span><div><strong>Elegí una referencia</strong><small>Podés convertirla automáticamente en contornos.</small></div></li>
+      <li><span>2</span><div><strong>Alineá y bloqueá</strong><small>Un dedo mueve; dos dedos amplían y rotan.</small></div></li>
+      <li><span>3</span><div><strong>Dibujá y registrá</strong><small>Capturá o grabá el proceso cuando quieras.</small></div></li>
+    </ol>
+    <button class="button button-primary full" id="btnWelcomeStart" type="button">Comenzar</button>
+    <label class="welcome-check"><input id="dontShowWelcome" type="checkbox"> No volver a mostrar</label>
+  </dialog>
 
+  <canvas id="workCanvas" class="hidden-canvas"></canvas>
+  <canvas id="captureCanvas" class="hidden-canvas"></canvas>
   <script src="scripts.js"></script>
 </body>
 </html>
